@@ -32,15 +32,14 @@ They all are enrolled in Computational Intelligence course.
 The original text of the task specifies to use a seed equals to 42 and N with the following values: 10, 20, 50, 100, 500, 1000. <br>
 Due to few hardware resources I could try only with values that are smaller. <br>
 Facing this fact, I added some cases less expansive to make richer the results section: <br>
-* N = 5 &rarr; Found a solution in 3 steps; visited 21 states 
-* N = 7 &rarr; Found a solution in 4 steps; visited 96 states
-* N = 10 &rarr; Found a solution in 4 steps; visited 750 states
-* N = 12 &rarr; Found a solution in 5 steps; visited 2,439 states
-* N = 15 &rarr; Found a solution in 4 steps; visited 9,831 states
-* N = 20 &rarr; Found a solution in 5 steps; visited 15,286 states
-* N = 25 &rarr; Found a solution in 4 steps; visited 1,095,111 states
-* N = 30 &rarr; Found a solution in 5 steps; visited 2,638,942 states
-* N = 40 &rarr; Found a solution in 5 steps; visited 3,852,620 states
+* N = 5 &rarr; Found a solution in 3 steps; visited 21 states. The total weight is 5.
+* N = 7 &rarr; Found a solution in 4 steps; visited 96 states. The total weight is 7.
+* N = 10 &rarr; Found a solution in 4 steps; visited 750 states. The total weight is 16.
+* N = 12 &rarr; Found a solution in 5 steps; visited 2,439 states. The total weight is 16.
+* N = 15 &rarr; Found a solution in 4 steps; visited 9,831 states. The total weight is 19.
+* N = 20 &rarr; Found a solution in 5 steps; visited 15,286 states. The total weight is 23.
+* N = 25 &rarr; Found a solution in 4 steps; visited 1,095,111 states. The total weight is 33.
+* N = 30 &rarr; Found a solution in 5 steps; visited 2,638,942 states. The total weight is 39.
 <br>
 
 ## Another strategy: the greedy algorithms
