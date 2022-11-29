@@ -77,45 +77,64 @@ class ExpertSystem:
         self._moves.append(f"{ply[1]} items from row {ply[0]}")
 
 
-class GeneticAlgorithm:
+class GeneticAlgorithmSystem:
     def __init__(self) -> None:
         self._nMoves = 0
         self._moves = []
 
     def printSolution(self) -> None:
-        logging.info(f" Expert system won, moves have been: {self._moves}; total: {self._nMoves}")
+        logging.info(f" Genetic Algorithm system won, moves have been: {self._moves}; total: {self._nMoves}")
 
-    def cook_status(self, nim: Nim) -> None:
-        cooked = dict()
-        cooked['possible_moves'] = [(r, o) for r, c in enumerate(nim._rows) for o in range(1, c + 1) if nim._k is None or o <= nim._k]
-        cooked['active_rows_number'] = sum(r > 0 for r in nim._rows)
-        cooked['shortest_row'] = min((x for x in enumerate(nim._rows) if x[1] > 0), key= lambda y: y[1])[0]
-        cooked['longest_row'] = max((x for x in enumerate(nim._rows) if x[1] > 0), key= lambda y: y[1])[0]
-        cooked['nim_status'] = nim.verify_state()
-        return cooked
+    def verify_nim_sum(self, ply: tuple, nim: Nim) -> bool:
+        nim.nimming_remove(ply[0], ply[1])
+        valid = nim.verify_state()
+        nim.nimming_add(ply[0], ply[1])
+        return valid
 
-    def make_strategy(self, genome: dict) -> Callable:
-        def evolvable(nim: Nim) -> tuple:
-            data = self.cook_status(nim)
-            if random.random() < genome['p']:
-                ply = (data['shortest_row'], random.randint(1, nim._rows[data['shortest_row']]))
-            else:
-                ply = (data['longest_row'], random.randint(1, nim._rows[data['longest_row']]))
-            
-            return ply
-        return evolvable
+    def strategies(self, nim: Nim) -> dict:
+        str = dict()
+        possible = [(r, o) for r, c in enumerate(nim._rows) for o in range(1, c + 1)]
+        possible_nim_sum = [x for x in possible if self.verify_nim_sum(x, nim) == True]
+        str['nim_sum'] = random.choice(possible_nim_sum) if possible_nim_sum else random.choice(possible)
+        str['random'] = random.choice(possible)
+        str['max_from_lowest'] = max(possible, key=lambda m: (-m[0], m[1]))
+        str['min_from_lowest'] = max(possible, key=lambda m: (-m[0], -m[1]))
+        str['max_from_highest'] = max(possible, key=lambda m: (m[0], m[1]))
+        str['min_from_highest'] = max(possible, key=lambda m: (m[0], -m[1]))
+        possible_longest = max((x for x in enumerate(nim._rows)), key=lambda y: y[1])[0]
+        possible_shortest = min((x for x in enumerate(nim._rows) if x[1] > 0), key=lambda y: y[1])[0]
+        str['longest_row'] = random.choice([x for x in possible if x[0] == possible_longest])
+        str['shortest_row'] = random.choice([x for x in possible if x[0] == possible_shortest])
+        return str
 
-    def evaluate_strategy():
+    def choose_strategy(self, nim: Nim, prob: list) -> tuple:
+        p = random.random()
+        if p <= prob[0]:
+            return self.strategies(nim)['random']
+        if p > prob[0] and p <= prob[1]:
+            return random.choice([self.strategies(nim)['max_from_lowest'], self.strategies(nim)['max_from_highest']])
+        if p > prob[1] and p <= prob[2]:
+            return random.choice([self.strategies(nim)['min_from_lowest'], self.strategies(nim)['min_from_highest']])
+        if p > prob[2] and p <= prob[3]:
+            return random.choice([self.strategies(nim)['longest_row'], self.strategies(nim)['shortest_row']])
+        if p > prob[3]:
+            return self.strategies(nim)['nim_sum']
+
+    def calculate_fitness(self):
         pass
 
-    def play():
-        pass
+    def play(self, nim: Nim):
+        ply = self.choose_strategy(nim, [.2, .3, .4, .5])
+        nim.nimming_remove(ply[0], ply[1])
+        self._nMoves += 1
+        self._moves.append(f"{ply[1]} items from row {ply[0]}")
 
 
 class MinMaxSystem:
     def __init__(self) -> None:
         self._nMoves = 0
         self._moves = []
+        self._max_depth = 4
 
     def printSolution(self) -> None:
         logging.info(f" MinMax system won, moves have been: {self._moves}; total: {self._nMoves}")
@@ -126,31 +145,32 @@ class MinMaxSystem:
         if not possible:
             if player:
                 # No win -> the other player arrives with the table empty
-                return (None, -1, step)
+                return (None, -1)
             else:
                 # Win -> the MinMax system arrives with the table empty
-                return (None, 1, step)
+                return (None, 1)
+        if step == self._max_depth:
+            # Evaluate secure and unsecure configurations
+            if player and nim.verify_state():
+                return(None, -1)
+            elif player and not nim.verify_state():
+                return(None, 1)
+            elif not player and nim.verify_state():
+                return(None, 1)
+            else:
+                return(None, -1)
         evaluations = list()
         for ply in possible:
             nim.nimming_remove(ply[0], ply[1])
             # Recursive call
-            _, val, weight = self.minmax(nim, not player, step+1)
-            if val == 1 and step != 0:
-                # Found a good path, return it
-                nim.nimming_add(ply[0], ply[1])
-                return (ply, val, weight)
-            elif val == 1 and step == 0:
-                # Found a good path, save it
-                nim.nimming_add(ply[0], ply[1])
-                evaluations.append((ply, val, weight))
-            else:
-                nim.nimming_add(ply[0], ply[1])
-                evaluations.append((ply, val, weight))
+            _, val = self.minmax(nim, not player, step+1)
+            nim.nimming_add(ply[0], ply[1])
+            evaluations.append((ply, val))
         # Return the lightweight solution trough the found ones
-        return max(evaluations, key=lambda x: -x[2])
+        return max(evaluations, key=lambda x: x[1])
 
     def play(self, nim: Nim):
-        best_ply, _, _ = self.minmax(nim, player=True, step=0)
+        best_ply, _ = self.minmax(nim, player=True, step=1)
         nim.nimming_remove(best_ply[0], best_ply[1])
         self._nMoves += 1
         self._moves.append(f"{best_ply[1]} items from row {best_ply[0]}")
