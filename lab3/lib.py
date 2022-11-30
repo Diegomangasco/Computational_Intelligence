@@ -9,6 +9,7 @@ class Nim:
     def __init__(self, num_rows: int, k: int = None) -> None:
         self._rows = [i*2+1 for i in range(num_rows)]
         self._k = k
+        self._nelements = sum(self._rows)
 
     def nimming_remove(self, row: int, num_objects: int) -> None:
         assert self._rows[row] >= num_objects
@@ -91,40 +92,49 @@ class GeneticAlgorithmSystem:
         nim.nimming_add(ply[0], ply[1])
         return valid
 
-    def strategies(self, nim: Nim) -> dict:
+    def strategies(self, nim: Nim, flag: bool) -> dict:
         str = dict()
         possible = [(r, o) for r, c in enumerate(nim._rows) for o in range(1, c + 1)]
-        possible_nim_sum = [x for x in possible if self.verify_nim_sum(x, nim) == True]
-        str['nim_sum'] = random.choice(possible_nim_sum) if possible_nim_sum else random.choice(possible)
-        str['random'] = random.choice(possible)
-        str['max_from_lowest'] = max(possible, key=lambda m: (-m[0], m[1]))
-        str['min_from_lowest'] = max(possible, key=lambda m: (-m[0], -m[1]))
-        str['max_from_highest'] = max(possible, key=lambda m: (m[0], m[1]))
-        str['min_from_highest'] = max(possible, key=lambda m: (m[0], -m[1]))
-        possible_longest = max((x for x in enumerate(nim._rows)), key=lambda y: y[1])[0]
-        possible_shortest = min((x for x in enumerate(nim._rows) if x[1] > 0), key=lambda y: y[1])[0]
-        str['longest_row'] = random.choice([x for x in possible if x[0] == possible_longest])
-        str['shortest_row'] = random.choice([x for x in possible if x[0] == possible_shortest])
+        # Calculate possible_nim_sum (and call the verify_nim_sum method), only when necessary
+        if flag:
+            possible_nim_sum = [x for x in possible if self.verify_nim_sum(x, nim) == True]
+            str['nim_sum'] = random.choice(possible_nim_sum) if possible_nim_sum else random.choice(possible)
+        else:
+            str['random'] = random.choice(possible)
+            str['max_from_lowest'] = max(possible, key=lambda m: (-m[0], m[1]))
+            str['min_from_lowest'] = max(possible, key=lambda m: (-m[0], -m[1]))
+            str['max_from_highest'] = max(possible, key=lambda m: (m[0], m[1]))
+            str['min_from_highest'] = max(possible, key=lambda m: (m[0], -m[1]))
+            possible_longest = max((x for x in enumerate(nim._rows)), key=lambda y: y[1])[0]
+            possible_shortest = min((x for x in enumerate(nim._rows) if x[1] > 0), key=lambda y: y[1])[0]
+            str['longest_row'] = random.choice([x for x in possible if x[0] == possible_longest])
+            str['shortest_row'] = random.choice([x for x in possible if x[0] == possible_shortest])
         return str
 
-    def choose_strategy(self, nim: Nim, prob: list) -> tuple:
+    def choose_strategy(self, nim: Nim, prob: float) -> tuple:
         p = random.random()
-        if p <= prob[0]:
-            return self.strategies(nim)['random']
-        if p > prob[0] and p <= prob[1]:
-            return random.choice([self.strategies(nim)['max_from_lowest'], self.strategies(nim)['max_from_highest']])
-        if p > prob[1] and p <= prob[2]:
-            return random.choice([self.strategies(nim)['min_from_lowest'], self.strategies(nim)['min_from_highest']])
-        if p > prob[2] and p <= prob[3]:
-            return random.choice([self.strategies(nim)['longest_row'], self.strategies(nim)['shortest_row']])
-        if p > prob[3]:
-            return self.strategies(nim)['nim_sum']
+        if p < prob:
+            s = self.strategies(nim, False)
+            arr = [s['max_from_lowest'], s['max_from_highest'], s['min_from_lowest'], 
+            s['min_from_highest'], s['random']]
+            str = random.choice(arr)
+        else:
+            str = self.strategies(nim, True)['nim_sum']
+        return str
 
-    def calculate_fitness(self):
-        pass
+    def calculate_prob(self, nim: Nim) -> float:
+        # Idea: increase the probability of choosing a nim-sum strategy if the game is near to the end
+        current_elements = sum(nim._rows)
+        if current_elements <= .3*nim._nelements:
+            # Much probable to choose a nim-sum strategy -> we are close to the end of the game
+            return .3
+        else:
+            # Much probable to choose a dummy strategy -> at the beginning we can do that
+            return .7
 
     def play(self, nim: Nim):
-        ply = self.choose_strategy(nim, [.2, .3, .4, .5])
+        prob = self.calculate_prob(nim)
+        ply = self.choose_strategy(nim, prob)
         nim.nimming_remove(ply[0], ply[1])
         self._nMoves += 1
         self._moves.append(f"{ply[1]} items from row {ply[0]}")
@@ -150,7 +160,7 @@ class MinMaxSystem:
                 # Win -> the MinMax system arrives with the table empty
                 return (None, 1)
         if step == self._max_depth:
-            # Evaluate secure and unsecure configurations
+            # Evaluate secure and insecure configurations when the tree exploration reaches the max depth
             if player and nim.verify_state():
                 return(None, -1)
             elif player and not nim.verify_state():
@@ -164,9 +174,9 @@ class MinMaxSystem:
             nim.nimming_remove(ply[0], ply[1])
             # Recursive call
             _, val = self.minmax(nim, not player, step+1)
+            # Restore the previous situation
             nim.nimming_add(ply[0], ply[1])
             evaluations.append((ply, val))
-        # Return the lightweight solution trough the found ones
         return max(evaluations, key=lambda x: x[1])
 
     def play(self, nim: Nim):
