@@ -6,14 +6,40 @@ Copyright **`(c)`** 2022 Diego Gasco `<diego.gasco99@gmail.com>`
 
 Write agents able to play Nim, with an arbitrary number of rows and an upper bound "k" on the number of objects that can be removed in a turn (a.k.a., subtraction game). <br>
 
-Nim is a mathematical game of strategy in which two players take turns removing (or "nimming") objects from distinct heaps or piles (rows in my implementation). On each turn, a player must remove at least one object, and may remove any number of objects provided they all come from the same heap or pile. Depending on the version being played, the goal of the game is either to avoid taking the last object or to take the last object (in our case the goal is to avoid to take the last object).
+Nim is a mathematical game of strategy in which two players take turns removing (or "nimming") objects from distinct heaps or piles (rows in my implementation). On each turn, a player must remove at least one object, and may remove any number of objects provided they all come from the same heap or pile. Depending on the version being played, the goal of the game is either to avoid taking the last object or to take the last object (in our case the goal is to take the last object).
+
+## Code organization
+
+I prepared my solutions with two files: one jupyter notebook file for the games, and one python file for all the tasks required. <br>
+In the lib.py file I made one class for each player with useful attributes and methods. Each class has the method "play", that is used in the lab3.ipynb file for playing the games. <br>
+The Genetic Algorithm System has one method, "evolve", that permits to train the model against a random player, before starting the real game (it is invoked just before the game). <br>
+
+## Random player
+
+The Random player simply plays with random moves between the possible ones.
 
 ## Task3.1: An agent using fixed rules based on nim-sum (i.e., an expert system)
 
-Expert system wins all the time -> nim sum
+For the first task, reading on internet, I decided to implement an Expert System that plays following the nim-sum rule. <br>
+This latter says that a nim game can be win if at each turn, the player remove a certain quantity of pieces, such that the XOR operation between all the remaining rows is not equal to zero (unstable state). So the goal is to leave the table in an unstable state to the other player.
+With this method we are sure to win every game, with the exception of a game played against another ExpertSystem (in this case the win depends on which player starts the game). <br>
+The Expert System uses the first possible move that can bring in an unstable state. I there isn't a valid move, it choses a random one. <br> 
 
 ## Task3.2: An agent using evolved rules
 
+For this task I decided to implement a Genetic Algorithm that is trained before a game such that a system could play by following some specific strategies. <br>
+In details, this system has some hardcoded strategies that have been parametrized. The goal of the GA approach is to find the best set of parameters with some games against a Random player. <br>
+Each individual is made with a genome (the parameters for the strategies) and a fitness function, that is updated after the games against the Random player (fitness=victories/total). <br>
+The set of parameters with the best fitness is taken and used for the game.
+
 ## Task3.3: An agent using minmax
 
+Done but I want to improve it.
+
 ## Task3.4: An agent using reinforcement learning
+
+TODO.
+
+## Conclusions after trials
+
+I have to finish some implementations. 
