@@ -10,7 +10,7 @@ class Nim:
     def __init__(self, num_rows: int, k: int = None) -> None:
         self._rows = [i*2+1 for i in range(num_rows)]
         self._k = k
-        self._nelements = sum(self._rows)
+        self._nElements = sum(self._rows)
 
     def nimming_remove(self, row: int, num_objects: int) -> None:
         assert self._rows[row] >= num_objects
@@ -118,14 +118,14 @@ class GeneticAlgorithmSystem:
         }
         return str
 
-    def mutation(self, selected, nim: Nim):
+    def mutation(self, selected, nim: Nim) -> list:
         # Random mutation of all the parameters
         selected[0] = random.randint(1, len(nim._rows))
         selected[1] = random.randint(1, len(nim._rows))
         selected[2] = random.randint(0, len(nim._rows))
         return selected
 
-    def game(self, nim: Nim, total_games, player2, parameters: list):
+    def game(self, nim: Nim, total_games, player2, parameters: list) -> int:
         # Game simulations with a Random player
         play = random.choice([1, 2])
         win = 0
@@ -145,7 +145,7 @@ class GeneticAlgorithmSystem:
                 win += 1
         return win
 
-    def evolution(self, nim: Nim, player):
+    def evolution(self, nim: Nim, player) -> tuple:
         # Randomic initilization of population
         population = [list() for _ in range(self._population_size)]
         for p in population:
@@ -171,7 +171,7 @@ class GeneticAlgorithmSystem:
             population = sorted(population, key=lambda i: i[3], reverse=True)[:self._population_size]
         return population[0][0:3]
 
-    def play(self, nim: Nim, parameters: list):
+    def play(self, nim: Nim, parameters: list) -> None:
         ply = random.choice(list(self.strategies(nim, parameters).values()))
         nim.nimming_remove(ply[0], ply[1])
         self._nMoves += 1
@@ -187,7 +187,7 @@ class MinMaxSystem:
     def printSolution(self) -> None:
         logging.info(f" MinMax system won, moves have been: {self._moves}; total: {self._nMoves}")
 
-    def minmax(self, nim: Nim, player: bool, step: int):
+    def minmax(self, nim: Nim, player: bool, step: int) -> tuple:
         possible = [(r, o) for r, c in enumerate(nim._rows) for o in range(1, c + 1)]
         alive_rows = []
         if player:
@@ -229,7 +229,7 @@ class MinMaxSystem:
             evaluations.append((ply, val))
         return max(evaluations, key=lambda x: x[1])
 
-    def play(self, nim: Nim):
+    def play(self, nim: Nim) -> None:
         best_ply, _ = self.minmax(nim, player=True, step=1)
         nim.nimming_remove(best_ply[0], best_ply[1])
         self._nMoves += 1
@@ -237,57 +237,68 @@ class MinMaxSystem:
 
 
 class RLSystem:
-    def __init__(self) -> None:
+    def __init__(self, nim: Nim) -> None:
         self._nMoves = 0
         self._moves = []
         self._nim_steps = 0
-        self._robot = Agent(self.nim_status.status, alpha=0.1, random_factor=0.4)
+        self._nim = nim
+        self._robot = Agent(self.possible_moves(), alpha=0.1, random_factor=0.4)
+        self._robot_state = ((0, 0), 0)
 
-    def printSolution(self) -> None:
-        logging.info(f" RL system won, moves have been: {self._moves}; total: {self._nMoves}")
+    def printSolution(self, n: int) -> None:
+        logging.info(f" RL system won, total wins: {n}")
 
-    def get_gtate_and_reward(self, nim: Nim):
-        pass
+    def possible_moves(self) -> list:
+        return [(r, o) for r, c in enumerate(self._nim._rows) for o in range(1, c + 1)]
 
-    def allowed_states(self, nim: Nim):
-        pass
+    def get_state_and_reward(self) -> tuple:
+        # If at end give 0 reward
+        # If not at end give -1 reward
+        return self._robot_state, -1 * int(not self._robot_state[1] == 0)
 
-    def play(self, nim: Nim, player, parameters=None):
-        rows = len(nim._rows)
-        win = random.choice([1, 2])
+    def allowed_states(self) -> list:
+        # A state is defined by ((action), leaved-state)
+        return [((r, o), sum(self._nim._rows)-o) for r, c in enumerate(self._nim._rows) for o in range(1, c + 1)]
+
+    def play(self, player, parameters=None) -> None:
+        rows = len(self._nim._rows)
+        self._robot_state = ((0, 0), self._nim._nElements)
+        number_win = 0
         for i in range(5000):
-            while not nim.goal():
+            win = random.choice([1, 2])
+            while not self._nim.goal():
                 if win == 1:
-                    state, _ = self.get_state_and_reward(nim)  # Get the current state
-                    # choose an action (explore or exploit)
-                    action = self._robot.choose_action(state, self.allowed_states(nim)[state])
-                    nim.nimming_remove(action[0], action[1])  # Update the nim according to the action
-                    state, reward = self.get_state_and_reward(nim)  # Get the new state and reward
+                    state, _ = self.get_state_and_reward()  # Get the current state
+                    # Choose an action (explore or exploit)
+                    action = self._robot.choose_action(self.allowed_states())
+                    self._nim.nimming_remove(action[0][0], action[0][1])  # Update the nim according to the action
+                    self._robot_state -= action[0][1]
+                    self._nim_steps += 1
+                    state, reward = self.get_state_and_reward()  # Get the new state and reward
                     # Update the robot memory with state and reward
-                    self.robot.update_state_history(state, reward)
+                    self._robot.update_state_history(state, reward)
                     if self._nim_steps > 5:
                         # End the robot if it takes too long to find the goal
                         pass
                     win = 2
                 else:
                     if parameters:
-                        player.play(nim, parameters)
+                        player.play(self._nim, parameters)
                     else:
-                        player.play(nim)
+                        player.play(self._nim)
                     win = 1
             if win == 2: 
                 # Robot win
-                pass
-            else:
-                pass
-            self.robot.learn()  # Robot should learn after every episode
+                number_win += 1
+                self.printSolution(number_win)
+            self._robot.learn()  # Robot should learn after every episode
             # Get a history of number of steps taken to plot later
             if i % 50 == 0:
                 print(f"{i}: {self._nim_steps}")
-                self._moves.append(self.nim_status.steps)
+                self._moves.append(self._nim_steps)
                 self._nMoves.append(i)
-            nim = Nim(rows)  # Reinitialize the game
+            self._nim = Nim(rows)  # Reinitialize the game
             self._nim_steps = 0
-
+            self._robot_state = ((0, 0), self._nim._nElements)
         plt.semilogy(self._nMoves, self._moves, "b")
         plt.show()
