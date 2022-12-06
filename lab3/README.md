@@ -30,11 +30,15 @@ The Expert System uses the first possible move that can bring in an unstable sta
 For this task I decided to implement a Genetic Algorithm that is trained before a game such that a system could play by following some specific strategies. <br>
 In details, this system has some hardcoded strategies that have been parametrized. The goal of the GA approach is to find the best set of parameters with some games against a Random player. <br>
 Each individual is made with a genome (the parameters for the strategies) and a fitness function, that is updated after the games against the Random player (fitness=victories/total). <br>
+My decision to train the GA with a Random Player everytime is that following this strategy, the GA System would probably more ready to beat against a lot of strategies (not against the nim-sum obviously) since it is trained a lot of time against a random one, that can be dummy or smart depending on the time and the moves. <br>
 The set of parameters with the best fitness is taken and used for the game.
 
 ## Task3.3: An agent using minmax
 
-Done but I want to improve it.
+The MinMax System follows the classical tree-based approach of the MinMax. Each node of the tree is a move done by MinMax System or by the opponent and the descent is recursive until one of the two player reaches the end. <br>
+Due to huge dimension reasons, I had to limit the depth of the tree to obtain results in an acceptable amount of time. <br>
+The recursive function evaluate all possible moves in each level and return an evaluation based on nim-sum strategy (-1 or 1 respectively for bad or good situation of MinMax System). <br>
+With this method I'm trying to maximize the movements that can bring to a victory for the MinMax System and to minimize the movements that can bring to a victory for the opponent system.  
 
 ## Task3.4: An agent using reinforcement learning
 

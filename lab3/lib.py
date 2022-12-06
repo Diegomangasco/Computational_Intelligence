@@ -1,7 +1,8 @@
 import logging
 import random
 from functools import reduce
-from collections import namedtuple
+from RLAgent import Agent
+import matplotlib.pyplot as plt
 
 logging.getLogger().setLevel(logging.INFO)
 
@@ -188,6 +189,18 @@ class MinMaxSystem:
 
     def minmax(self, nim: Nim, player: bool, step: int):
         possible = [(r, o) for r, c in enumerate(nim._rows) for o in range(1, c + 1)]
+        alive_rows = []
+        if player:
+            for p in possible:
+                if p[0] not in alive_rows:
+                    alive_rows.append(p[0])
+            if len(alive_rows) == 1:
+                # Is there one row only?
+                # A bit improvement for MinMax strategy: take all the elements from the remaining row
+                nim.nimming_remove(max(possible, key=lambda x: x[1])[0], max(possible, key=lambda x: x[1])[1])
+                _, val = self.minmax(nim, not player, step+1)
+                nim.nimming_add(max(possible, key=lambda x: x[1])[0], max(possible, key=lambda x: x[1])[1])
+                return(max(possible, key=lambda x: x[1]), val)
         # True player is the MinMax system, False player is the other player
         if not possible:
             if player:
@@ -195,7 +208,7 @@ class MinMaxSystem:
                 return (None, -1)
             else:
                 # Win -> the MinMax system arrives with the table empty
-                return (None, 1)
+                return (None, 1) 
         if step == self._max_depth:
             # Evaluate secure and insecure configurations when the tree exploration reaches the max depth
             if player and nim.verify_state():
@@ -221,3 +234,60 @@ class MinMaxSystem:
         nim.nimming_remove(best_ply[0], best_ply[1])
         self._nMoves += 1
         self._moves.append(f"{best_ply[1]} items from row {best_ply[0]}")
+
+
+class RLSystem:
+    def __init__(self) -> None:
+        self._nMoves = 0
+        self._moves = []
+        self._nim_steps = 0
+        self._robot = Agent(self.nim_status.status, alpha=0.1, random_factor=0.4)
+
+    def printSolution(self) -> None:
+        logging.info(f" RL system won, moves have been: {self._moves}; total: {self._nMoves}")
+
+    def get_gtate_and_reward(self, nim: Nim):
+        pass
+
+    def allowed_states(self, nim: Nim):
+        pass
+
+    def play(self, nim: Nim, player, parameters=None):
+        rows = len(nim._rows)
+        win = random.choice([1, 2])
+        for i in range(5000):
+            while not nim.goal():
+                if win == 1:
+                    state, _ = self.get_state_and_reward(nim)  # Get the current state
+                    # choose an action (explore or exploit)
+                    action = self._robot.choose_action(state, self.allowed_states(nim)[state])
+                    nim.nimming_remove(action[0], action[1])  # Update the nim according to the action
+                    state, reward = self.get_state_and_reward(nim)  # Get the new state and reward
+                    # Update the robot memory with state and reward
+                    self.robot.update_state_history(state, reward)
+                    if self._nim_steps > 5:
+                        # End the robot if it takes too long to find the goal
+                        pass
+                    win = 2
+                else:
+                    if parameters:
+                        player.play(nim, parameters)
+                    else:
+                        player.play(nim)
+                    win = 1
+            if win == 2: 
+                # Robot win
+                pass
+            else:
+                pass
+            self.robot.learn()  # Robot should learn after every episode
+            # Get a history of number of steps taken to plot later
+            if i % 50 == 0:
+                print(f"{i}: {self._nim_steps}")
+                self._moves.append(self.nim_status.steps)
+                self._nMoves.append(i)
+            nim = Nim(rows)  # Reinitialize the game
+            self._nim_steps = 0
+
+        plt.semilogy(self._nMoves, self._moves, "b")
+        plt.show()
