@@ -2,6 +2,7 @@ import logging
 import random
 from functools import reduce
 from RLAgent import Agent
+from copy import deepcopy
 import matplotlib.pyplot as plt
 
 logging.getLogger().setLevel(logging.INFO)
@@ -238,50 +239,51 @@ class MinMaxSystem:
 
 class RLSystem:
     def __init__(self, nim: Nim) -> None:
-        self._nMoves = 0
+        self._nMoves = []
         self._moves = []
         self._nim_steps = 0
         self._nim = nim
-        self._robot = Agent(self.possible_moves(), alpha=0.1, random_factor=0.4)
-        self._robot_state = ((0, 0), 0)
+        self._robot = Agent(alpha=0.1, random_factor=0.4)
+        self._robot_state = tuple(deepcopy(nim._rows))
 
     def printSolution(self, n: int) -> None:
-        logging.info(f" RL system won, total wins: {n}")
-
-    def possible_moves(self) -> list:
-        return [(r, o) for r, c in enumerate(self._nim._rows) for o in range(1, c + 1)]
+        logging.info(f" RL system total wins: {n}")
 
     def get_state_and_reward(self) -> tuple:
         # If at end give 0 reward
         # If not at end give -1 reward
-        return self._robot_state, -1 * int(not self._robot_state[1] == 0)
+        return deepcopy(self._nim._rows), -1 * int(not self._nim.goal())
 
     def allowed_states(self) -> list:
-        # A state is defined by ((action), leaved-state)
-        return [((r, o), sum(self._nim._rows)-o) for r, c in enumerate(self._nim._rows) for o in range(1, c + 1)]
+        # A state is defined by the pieces in the rows
+        possible = [(r, o) for r, c in enumerate(self._robot_state) for o in range(1, c + 1)]
+        states = [list(deepcopy(self._robot_state)) for _ in possible]
+        ret = []
+        for i, s in enumerate(states):
+            s[possible[i][0]] -= possible[i][1]
+            ret.append((tuple(s), possible[i]))
+        return ret
 
     def play(self, player, parameters=None) -> None:
         rows = len(self._nim._rows)
-        self._robot_state = ((0, 0), self._nim._nElements)
         number_win = 0
         for i in range(5000):
             win = random.choice([1, 2])
             while not self._nim.goal():
                 if win == 1:
                     state, _ = self.get_state_and_reward()  # Get the current state
+                    self._robot_state = deepcopy(state)
                     # Choose an action (explore or exploit)
                     action = self._robot.choose_action(self.allowed_states())
-                    self._nim.nimming_remove(action[0][0], action[0][1])  # Update the nim according to the action
-                    self._robot_state -= action[0][1]
+                    self._nim.nimming_remove(action[0], action[1])  # Update the nim according to the action
+                    self._robot_state = deepcopy(self._nim._rows)
                     self._nim_steps += 1
                     state, reward = self.get_state_and_reward()  # Get the new state and reward
                     # Update the robot memory with state and reward
                     self._robot.update_state_history(state, reward)
-                    if self._nim_steps > 5:
-                        # End the robot if it takes too long to find the goal
-                        pass
                     win = 2
                 else:
+                    # Other player
                     if parameters:
                         player.play(self._nim, parameters)
                     else:
@@ -290,7 +292,6 @@ class RLSystem:
             if win == 2: 
                 # Robot win
                 number_win += 1
-                self.printSolution(number_win)
             self._robot.learn()  # Robot should learn after every episode
             # Get a history of number of steps taken to plot later
             if i % 50 == 0:
@@ -299,6 +300,7 @@ class RLSystem:
                 self._nMoves.append(i)
             self._nim = Nim(rows)  # Reinitialize the game
             self._nim_steps = 0
-            self._robot_state = ((0, 0), self._nim._nElements)
+            self._robot_state = deepcopy(self._nim._rows)
+        self.printSolution(number_win)
         plt.semilogy(self._nMoves, self._moves, "b")
         plt.show()

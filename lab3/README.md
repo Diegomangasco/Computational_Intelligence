@@ -38,12 +38,19 @@ The set of parameters with the best fitness is taken and used for the game.
 The MinMax System follows the classical tree-based approach of the MinMax. Each node of the tree is a move done by MinMax System or by the opponent and the descent is recursive until one of the two player reaches the end. <br>
 Due to huge dimension reasons, I had to limit the depth of the tree to obtain results in an acceptable amount of time. <br>
 The recursive function evaluate all possible moves in each level and return an evaluation based on nim-sum strategy (-1 or 1 respectively for bad or good situation of MinMax System). <br>
-With this method I'm trying to maximize the movements that can bring to a victory for the MinMax System and to minimize the movements that can bring to a victory for the opponent system.  
+With this method I'm trying to maximize the movements that can bring to a victory for the MinMax System and to minimize the movements that can bring to a victory for the opponent system. <br>
+Another improvement that I've made is the row control at the beginning of each MinMax function call. It basically controls if in the state we are reaching, there are more than one row, if the assertion is false, the move that the System has to make is to remove all the remaining elements from the row. This control is useful both in limited-depth cases and in normal ones.    
 
 ## Task3.4: An agent using reinforcement learning
 
-TODO.
+For the Reinforcement Learning System I based my solution on the one that Andrea Calabrese showed us in classroom. <br>
+Obviously I adapted it to a two player game and for the Nim game itself. There are multiple runs in the games against the opponent, and in each one the RL System should learn better the moves to take. <br>
+I defined the state as the combination of the move and the number of pieces that are still in the game (how many pieces the state is far from the victory?). <br>
+The states are initialized with a reward that is randomly choose and updated everytime. <br>
+The RL Agent is in another file for managing reasons. <br>
 
 ## Conclusions after trials
 
-I have to finish some implementations. 
+I made some trials game, but feel free to add some others and see the results! <br>
+The Systems that I created seems to work well, but surely they can be improved in some ways, like adding some strategies or tuning parameters. <br>
+By the way, the best Systems are surely the Expert an the MinMax ones, because they use the nim-sum rules that always brings to a win. But in some other games it can be not so simple to hardcode an optimal rule like that. So is important to think about other strategies. In this context the other approaches (RL, GA and MinMax with another evaluation rule) are useful to train an intelligent system that can beat another one.
