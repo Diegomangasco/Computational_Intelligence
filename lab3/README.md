@@ -44,10 +44,11 @@ Another improvement that I've made is the row control at the beginning of each M
 ## Task3.4: An agent using reinforcement learning
 
 For the Reinforcement Learning System I based my solution on the one that Andrea Calabrese showed us in classroom. <br>
-Obviously I adapted it to a two player game and for the Nim game itself. There are multiple runs in the games against the opponent, and in each one the RL System should learn better the moves to take. <br>
-I defined the state as the combination of the move and the number of pieces that are still in the game (how many pieces the state is far from the victory?). <br>
+Obviously I adapted it to a two player game and for the Nim game itself. There are multiple runs in the games against the opponent, and in each one the RL System should learns the moves to take more likely. <br>
+I defined the state as the current state of the game (rows with pieces). The standard RL usually uses to pre-calculate all the possible states before starting the game. In my solution, to be more time efficient, I decided to start with an empty dictionary of states and add or update them while the games are running. <br>
 The states are initialized with a reward that is randomly choose and updated everytime. <br>
 The RL Agent is in another file for managing reasons. <br>
+Unfortunately the game against MinMax System seems to be time unfittable due to the recursion in MinMax and the number of games that have to be played in RL.
 
 ## Conclusions after trials
 

@@ -239,8 +239,8 @@ class MinMaxSystem:
 
 class RLSystem:
     def __init__(self, nim: Nim) -> None:
-        self._nMoves = []
-        self._moves = []
+        self._wins = []
+        self._epochs = []
         self._nim_steps = 0
         self._nim = nim
         self._robot = Agent(alpha=0.1, random_factor=0.4)
@@ -267,6 +267,7 @@ class RLSystem:
     def play(self, player, parameters=None) -> None:
         rows = len(self._nim._rows)
         number_win = 0
+        number_win_local = 0
         for i in range(5000):
             win = random.choice([1, 2])
             while not self._nim.goal():
@@ -292,15 +293,17 @@ class RLSystem:
             if win == 2: 
                 # Robot win
                 number_win += 1
+                number_win_local += 1
             self._robot.learn()  # Robot should learn after every episode
             # Get a history of number of steps taken to plot later
             if i % 50 == 0:
-                print(f"{i}: {self._nim_steps}")
-                self._moves.append(self._nim_steps)
-                self._nMoves.append(i)
+                print(f"{i}: {number_win}")
+                self._wins.append(number_win_local)
+                self._epochs.append(i)
+                number_win_local = 0
             self._nim = Nim(rows)  # Reinitialize the game
             self._nim_steps = 0
             self._robot_state = deepcopy(self._nim._rows)
         self.printSolution(number_win)
-        plt.semilogy(self._nMoves, self._moves, "b")
+        plt.semilogy(self._epochs, self._wins, "b")
         plt.show()
