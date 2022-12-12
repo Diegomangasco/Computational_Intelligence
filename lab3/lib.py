@@ -228,7 +228,10 @@ class MinMaxSystem:
             # Restore the previous situation
             nim.nimming_add(ply[0], ply[1])
             evaluations.append((ply, val))
-        return max(evaluations, key=lambda x: x[1])
+        if player:
+            return max(evaluations, key=lambda x: x[1])
+        else:
+            return min(evaluations, key=lambda x: x[1])
 
     def play(self, nim: Nim) -> None:
         best_ply, _ = self.minmax(nim, player=True, step=1)
